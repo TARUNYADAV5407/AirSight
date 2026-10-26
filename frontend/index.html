@@ -1,0 +1,1296 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air Quality Dashboard</title>
+
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        
+body {
+    font-family: Arial, sans-serif;
+    background: #080909;
+    color: white;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+
+        
+
+.dashboard {
+    width: 100%;
+    max-width: none;
+    min-height: 100vh;
+    margin: 0;
+    background: #080909;
+    border: none;
+    border-radius: 0;
+    display: flex;
+    overflow: hidden;
+}
+
+        /* Sidebar */
+        .sidebar {
+            width: 65px;
+            background: #111313;
+            padding: 15px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            font-size: 30px;
+            margin-bottom: 10px;
+        }
+
+        .sidebar a {
+            color: #c0c5c5;
+            text-decoration: none;
+            font-size: 20px;
+            padding: 9px;
+            border-radius: 8px;
+        }
+
+        .sidebar a:hover,
+        .sidebar a.active {
+            background: #303333;
+            color: white;
+        }
+
+        /* Main content */
+        
+.main {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    padding: 24px;
+}
+
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        .topbar h1 {
+            font-size: 23px;
+        }
+
+        .user {
+            font-size: 13px;
+            color: #ccc;
+        }
+
+        /* Dashboard grid */
+        .content {
+            display: grid;
+            grid-template-columns: 1.3fr 1fr 1fr;
+            gap: 14px;
+        }
+
+        .card {
+            background: #121414;
+            border: 1px solid #303333;
+            border-radius: 10px;
+            padding: 15px;
+            min-width: 0;
+        }
+
+        .card h3 {
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .dots {
+            float: right;
+            color: #999;
+        }
+
+        /* Map */
+        
+/* Map */
+.map {
+    grid-column: 1 / 3;
+    height: 260px;
+    padding: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+#real-map {
+    width: 100%;
+    height: 100%;
+    min-height: 260px;
+}
+
+                repeating-linear-gradient(
+                    35deg,
+                    transparent 0px,
+                    transparent 35px,
+                    #50535c 36px,
+                    transparent 39px
+                ),
+                repeating-linear-gradient(
+                    120deg,
+                    transparent 0px,
+                    transparent 45px,
+                    #292c34 46px,
+                    transparent 49px
+                );
+        }
+
+        .map h3 {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: #202329;
+            padding: 8px;
+            border-radius: 5px;
+        }
+
+        .pin {
+            position: absolute;
+            background: #e34f4b;
+            padding: 5px 7px;
+            border-radius: 5px;
+            font-size: 11px;
+        }
+
+        .green {
+            background: #4b9e58;
+        }
+
+        /* AQI */
+        .aqi {
+            text-align: center;
+        }
+
+        .location {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #bbb;
+            margin: 20px 0;
+        }
+
+        .aqi-number {
+            font-size: 43px;
+            font-weight: bold;
+            margin: 10px;
+        }
+
+        .face {
+            font-size: 38px;
+        }
+
+        .status {
+            font-size: 12px;
+            line-height: 1.6;
+            margin-top: 10px;
+        }
+
+        /* Environmental data */
+        .environment {
+            grid-column: 1 / 2;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .stat {
+            text-align: center;
+            border-right: 1px solid #333;
+            padding: 5px;
+        }
+
+        .stat:last-child {
+            border: none;
+        }
+
+        .icon {
+            font-size: 25px;
+            margin-bottom: 10px;
+        }
+
+        .value {
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .label {
+            color: #888;
+            font-size: 11px;
+            margin-top: 8px;
+        }
+
+        /* AQI graph */
+        .graph {
+            display: flex;
+            align-items: end;
+            height: 90px;
+            gap: 4px;
+            border-bottom: 1px solid #444;
+        }
+
+        .bar {
+            flex: 1;
+            background: linear-gradient(to top, #56634f, #c3cbbd);
+            border-radius: 4px 4px 0 0;
+        }
+        .city-tools { display:flex; gap:6px; align-items:center; margin:10px 0 6px; flex-wrap:wrap; }
+        .city-search { display:flex; flex:1; min-width:120px; gap:4px; }
+        .city-search input { width:100%; min-width:0; background:#202323; color:#fff; border:1px solid #3a4141; border-radius:7px; padding:8px; font-size:11px; }
+        .city-tool-btn { border:1px solid #3a4141; background:#202323; color:#d8f8ec; border-radius:7px; padding:8px; font-size:10px; cursor:pointer; white-space:nowrap; }
+        .location-message { color:#aeb7b7; font-size:10px; line-height:1.35; margin-bottom:8px; }
+        .city-tools { position: relative; }
+        .city-search { position: relative; z-index: 5; }
+        .city-suggestions {
+            position: absolute;
+            z-index: 1000;
+            top: calc(100% + 3px);
+            right: 0;
+            width: min(100%, 260px);
+            max-height: 220px;
+            overflow-y: auto;
+            background: #171b1a;
+            border: 1px solid #3c514a;
+            border-radius: 8px;
+            box-shadow: 0 10px 24px rgba(0,0,0,.38);
+        }
+        .city-suggestions[hidden] { display: none; }
+        .city-suggestion {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 9px 11px;
+            border: 0;
+            border-bottom: 1px solid #29312e;
+            color: #f2f7f5;
+            background: transparent;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        .city-suggestion:last-child { border-bottom: 0; }
+        .city-suggestion:hover, .city-suggestion:focus { background: #263a33; outline: none; }
+        .city-suggestion small { display: block; color: #9db5ab; margin-top: 3px; font-size: 10px; }
+        .city-suggestions-empty { padding: 10px; color: #aeb7b7; font-size: 11px; }
+
+        .profile-empty {
+            width: 100%;
+            align-self: center;
+            color: #aeb7b7;
+            font-size: 11px;
+            text-align: center;
+            padding: 24px 8px;
+        }
+        .profile-note {
+            color: #aeb7b7;
+            font-size: 10px;
+            line-height: 1.4;
+            margin: 8px 0 12px;
+        }
+        .profile-labels, .profile-values {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 4px;
+            text-align: center;
+        }
+        .profile-labels {
+            font-size: 10px;
+            color: #aeb7b7;
+            margin-top: 8px;
+        }
+        .profile-values {
+            font-size: 11px;
+            color: #fff;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+        #pollutant-profile .bar {
+            min-width: 0;
+            transition: height .25s ease;
+        }
+        .environment .stats { margin-top: 12px; }
+        .environment .stat { min-width: 0; }
+        .environment .value { margin: 8px 0 5px; }
+        .environment .label { font-size: 10px; line-height: 1.3; }
+
+
+        /* Health tips */
+        .tip {
+            font-size: 11px;
+            color: #ccc;
+            margin: 15px 0;
+            line-height: 1.5;
+        }
+
+        /* Forecast */
+        .forecast {
+            grid-column: 1 / 2;
+        }
+
+        .forecast-grid {
+            display: grid;
+            grid-template-columns: 40px repeat(7, 1fr);
+            gap: 3px;
+        }
+
+        .time {
+            font-size: 10px;
+            color: #aaa;
+            display: flex;
+            align-items: center;
+        }
+
+        .cell {
+            height: 20px;
+            background: #28312f;
+        }
+
+        .c1 { background: #444b49; }
+        .c2 { background: #666d6a; }
+        .c3 { background: #929995; }
+        .c4 { background: #c6cdca; }
+
+        .days {
+            grid-column: 2 / 9;
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-size: 9px;
+            color: #aaa;
+            margin-top: 8px;
+        }
+
+        /* City watchlist */
+        
+.watchlist {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 400px;
+}
+
+
+        .watch-head,
+        .city-row {
+            display: grid;
+            grid-template-columns: 1fr 1.4fr 1.4fr 1fr;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .watch-head {
+            font-size: 10px;
+            color: #888;
+            margin: 15px 0;
+        }
+
+        
+.city-row {
+    font-size: 12px;
+    margin: 22px 0;
+    padding: 5px 0;
+}
+
+
+        .level {
+            background: #303535;
+            height: 17px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .level span {
+            display: block;
+            height: 100%;
+            background: #79827e;
+            color: white;
+            padding: 3px;
+            white-space: nowrap;
+            font-size: 9px;
+        }
+
+        .weather {
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        .temp {
+            white-space: nowrap;
+            color: #bbb;
+        }
+
+        footer {
+            text-align: right;
+            color: #777;
+            font-size: 10px;
+            margin-top: 15px;
+        }
+
+        /* Live data status and Leaflet popups */
+        .map-status {
+            position: absolute;
+            z-index: 500;
+            top: 12px;
+            right: 12px;
+            max-width: calc(100% - 24px);
+            padding: 8px 10px;
+            border: 1px solid #3b4240;
+            border-radius: 6px;
+            background: rgba(15, 18, 18, 0.94);
+            color: #e8eeee;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+        .map-status.error { color: #ffb4a9; }
+        .map-status.ok { color: #b8f3c5; }
+        .leaflet-popup-content-wrapper,
+        .leaflet-popup-tip { background: #171b1b; color: #f4f6f6; }
+        .leaflet-popup-content { line-height: 1.5; min-width: 190px; }
+        .station-popup-title { font-weight: bold; margin-bottom: 4px; }
+        .station-popup-muted { color: #b9c1c1; font-size: 11px; }
+        .station-popup-pollutants { margin-top: 6px; }
+
+        #live-watchlist .city-row {
+            margin: 12px 0;
+            padding: 10px 0;
+            border-bottom: 1px solid #292e2e;
+            line-height: 1.45;
+        }
+        #live-watchlist .city-row:last-child { border-bottom: none; }
+        #live-watchlist .station-readings { color: #c8d8d0; }
+        #live-watchlist .station-updated { color: #aeb7b7; font-size: 10px; }
+        .environment-note, .watchlist-note {
+            color: #aeb7b7;
+            font-size: 10px;
+            line-height: 1.4;
+            margin-top: 12px;
+        }
+
+
+        .environment-note {
+            grid-column: 1 / -1;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+            text-align: left;
+            padding: 8px 10px 0;
+            margin-top: 8px;
+        }
+        .environment-grid, .environment-data, .env-stats {
+            min-width: 0;
+        }
+        .icon[aria-hidden="true"] {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            margin: 0 auto 8px;
+            border-radius: 50%;
+            color: #75d9ad;
+            background: #1d332b;
+            font-size: 22px;
+            line-height: 1;
+        }
+        
+        /* Mobile screen */
+        @media (max-width: 850px) {
+            .content {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .map,
+            .environment,
+            .forecast {
+                grid-column: 1 / 2;
+            }
+
+            .aqi,
+            .graph-card,
+            .health,
+            .watchlist {
+                grid-column: 2 / 3;
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 5px;
+            }
+
+            .sidebar {
+                width: 45px;
+                padding: 10px 3px;
+                gap: 12px;
+            }
+
+            .sidebar a {
+                font-size: 16px;
+                padding: 7px;
+            }
+
+            .main {
+                padding: 10px;
+            }
+
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .topbar h1 {
+                font-size: 18px;
+            }
+
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            .map,
+            .aqi,
+            .environment,
+            .graph-card,
+            .health,
+            .forecast,
+            .watchlist {
+                grid-column: 1 / 2;
+            }
+
+            .watch-head,
+            .city-row {
+                gap: 4px;
+                font-size: 9px;
+            }
+
+            .stat {
+                padding: 3px;
+            }
+
+            .value {
+                font-size: 10px;
+            }
+        }
+
+    
+        /* Compact US AQI scale card */
+        .aqi-scale-card { grid-column: 2 / 4; min-width: 0; }
+        .aqi-scale-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+        .aqi-scale-heading h3 { margin:0 0 5px; font-size:14px; }
+        .aqi-scale-heading p { margin:0; color:#a8b1b5; font-size:11px; }
+        .aqi-health-badge { padding:7px 10px; border-radius:18px; background:#303638; color:#fff; font-size:11px; font-weight:700; }
+        .aqi-scale-bar { position:relative; display:flex; height:13px; overflow:visible; border-radius:8px; }
+        .aqi-segment { flex:1; }
+        .aqi-segment:first-child { border-radius:8px 0 0 8px; }
+        .aqi-segment:last-of-type { border-radius:0 8px 8px 0; }
+        .aqi-segment.good { background:#00e400; }
+        .aqi-segment.moderate { background:#ffff00; }
+        .aqi-segment.sensitive { background:#ff7e00; }
+        .aqi-segment.unhealthy { background:#ff0000; }
+        .aqi-segment.very-unhealthy { background:#8f3f97; }
+        .aqi-segment.hazardous { background:#7e0023; }
+        .aqi-scale-marker { position:absolute; top:17px; left:0; width:3px; height:11px; border-radius:3px; background:#fff; transform:translateX(-50%); box-shadow:0 0 0 2px #121414; }
+        .aqi-scale-ticks { position:relative; display:block; height:14px; margin-top:22px; color:#a8b1b5; font-size:10px; }
+        .aqi-scale-ticks span { position:absolute; transform:translateX(-50%); white-space:nowrap; }
+        .aqi-scale-ticks span:first-child { left:0; transform:none; }
+        .aqi-scale-ticks span:nth-child(2) { left:10%; }
+        .aqi-scale-ticks span:nth-child(3) { left:20%; }
+        .aqi-scale-ticks span:nth-child(4) { left:30%; }
+        .aqi-scale-ticks span:nth-child(5) { left:40%; }
+        .aqi-scale-ticks span:nth-child(6) { left:60%; }
+        .aqi-scale-ticks span:last-child { left:100%; transform:translateX(-100%); }
+        .aqi-scale-legend { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px 10px; margin-top:16px; }
+        .aqi-scale-legend > div { display:flex; align-items:flex-start; gap:6px; min-width:0; font-size:10px; color:#d9dfe0; }
+        .aqi-scale-legend span { line-height:1.35; }
+        .aqi-scale-legend b { display:block; color:#a8b1b5; font-weight:400; margin-top:2px; }
+        .aqi-key { display:inline-block; width:9px; height:9px; margin-top:2px; flex:0 0 9px; border-radius:50%; }
+        .good-key { background:#00e400; } .moderate-key { background:#ffff00; }
+        .sensitive-key { background:#ff7e00; } .unhealthy-key { background:#ff0000; }
+        .very-unhealthy-key { background:#8f3f97; } .hazardous-key { background:#7e0023; }
+        .aqi-health-advice { margin:14px 0 8px; padding:10px 11px; border-left:4px solid #ff0000; border-radius:6px; background:#202424; color:#e9eeee; font-size:11px; line-height:1.5; }
+        .aqi-scale-footnote { color:#9ba6a8; font-size:9px; line-height:1.4; }
+        @media (max-width:850px) { .aqi-scale-card { grid-column:2 / 3; } }
+        @media (max-width:600px) { .aqi-scale-card { grid-column:1 / 2; } .aqi-scale-legend { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
+</style>
+</head>
+
+<body>
+
+<div class="dashboard">
+
+   
+    <!-- Main dashboard -->
+    <main class="main">
+
+        <div class="topbar">
+            <h1>Air Quality Dashboard - India</h1>
+           
+        </div>
+
+        <div class="content">
+
+            <!-- Map section -->
+            
+<!-- Map section -->
+<div class="card map" id="map">
+    <div id="real-map" aria-label="Map of live air-quality monitoring stations in India"></div>
+    <div id="map-status" class="map-status" role="status" aria-live="polite">Loading live monitoring stations…</div>
+</div>
+
+
+            <!-- Live AQI -->
+            <div class="card aqi">
+                <h3>TOMORROW’S AQI FORECAST <span class="dots">···</span></h3>
+                <div class="city-tools">
+                    <button type="button" id="detect-location-btn" class="city-tool-btn">⌖ Detect my location</button>
+                    <form id="city-search-form" class="city-search">
+                        <input id="city-search-input" type="search" placeholder="Search city or state…" aria-label="Search city or state">
+                        <button type="submit" class="city-tool-btn" aria-label="Search location">⌕</button>
+                    </form>
+                    <div id="city-suggestions" class="city-suggestions" role="listbox" aria-label="Available cities and states" hidden></div>
+                </div>
+                <div id="location-message" class="location-message">Allow location access or search for a city/state.</div>
+                <div class="location">
+                    <span>Random Forest prediction</span>
+                    <span id="aqi-location">Waiting for live station</span>
+                </div>
+
+                <div class="aqi-number" id="overall-aqi">—</div>
+                <div class="face">🌫️</div>
+                <div class="status" id="aqi-status">Loading a next-day forecast from live pollutant readings…</div>
+            </div>
+
+
+            <!-- US AQI health scale card -->
+            <section class="card aqi-scale-card" id="aqi-scale-card">
+                <div class="aqi-scale-heading">
+                    <div>
+                        <h3>US AQI Health Scale</h3>
+                        <p>Understand tomorrow's forecast</p>
+                    </div>
+                    <span id="aqi-health-badge" class="aqi-health-badge">AQI —</span>
+                </div>
+                <div class="aqi-scale-bar" aria-label="US AQI scale from 0 to 500; category boundaries at 50, 100, 150, 200, 300, and 500">
+                    <span class="aqi-segment good" style="flex:50"></span>
+                    <span class="aqi-segment moderate" style="flex:50"></span>
+                    <span class="aqi-segment sensitive" style="flex:50"></span>
+                    <span class="aqi-segment unhealthy" style="flex:50"></span>
+                    <span class="aqi-segment very-unhealthy" style="flex:100"></span>
+                    <span class="aqi-segment hazardous" style="flex:200"></span>
+                    <span id="aqi-scale-marker" class="aqi-scale-marker"></span>
+                </div>
+                <div class="aqi-scale-ticks">
+                    <span>0</span><span>50</span><span>100</span><span>150</span><span>200</span><span>300</span><span>500</span>
+                </div>
+                <div class="aqi-scale-legend">
+                    <div><i class="aqi-key good-key"></i><span>Good <b>0–50</b></span></div>
+                    <div><i class="aqi-key moderate-key"></i><span>Moderate <b>51–100</b></span></div>
+                    <div><i class="aqi-key sensitive-key"></i><span>Sensitive groups <b>101–150</b></span></div>
+                    <div><i class="aqi-key unhealthy-key"></i><span>Unhealthy <b>151–200</b></span></div>
+                    <div><i class="aqi-key very-unhealthy-key"></i><span>Very unhealthy <b>201–300</b></span></div>
+                    <div><i class="aqi-key hazardous-key"></i><span>Hazardous <b>301–500</b></span></div>
+                </div>
+                <p id="aqi-health-advice" class="aqi-health-advice">Waiting for forecast data…</p>
+                <small class="aqi-scale-footnote">US AQI scale · Forecast estimates, not official monitoring-station measurements.</small>
+            </section>
+
+            <!-- Environmental data -->
+            <div class="card environment" id="environment">
+                <h3>Environmental Data <span class="dots">···</span></h3>
+
+                <div class="stats">
+
+                    <div class="stat">
+                        <div class="icon" aria-hidden="true">◉</div>
+                        <div class="value" id="env-pm25">Loading…</div>
+                        <div class="label">PM2.5 · reported value</div>
+                    </div>
+
+                    <div class="stat">
+                        <div class="icon" aria-hidden="true">◉</div>
+                         <div class="value" id="env-pm10">Loading…</div>
+                         <div class="label">PM10 · reported value</div>
+                    </div>
+
+                    <div class="stat">
+                        <div class="icon" aria-hidden="true">●</div>
+                         <div class="value" id="env-no2">Loading…</div>
+                         <div class="label">NO₂ · reported value</div>
+                    </div>
+
+                    <div class="stat">
+                        <div class="icon" aria-hidden="true">●</div>
+                         <div class="value" id="env-so2">Loading…</div>
+                         <div class="label">SO₂ · reported value</div>
+                    </div>
+
+                </div>
+                <div class="environment-note" id="environment-note">
+                    Loading live readings. Values are source-reported pollutant concentrations, not overall AQI.
+                </div>
+            </div>
+
+            <!-- Live pollutant profile; bars are normalized for visual comparison only -->
+            <div class="card graph-card">
+                <h3>Live Pollutant Profile <span class="dots" id="profile-station">Waiting for station</span></h3>
+                <div class="profile-note">Current station readings · bar heights are scaled within this profile, not AQI sub-indices.</div>
+                <div class="graph" id="pollutant-profile">
+                    <div class="bar" style="height:10%"></div>
+                    <div class="bar" style="height:10%"></div>
+                    <div class="bar" style="height:10%"></div>
+                    <div class="bar" style="height:10%"></div>
+                </div>
+                <div class="profile-labels" id="profile-labels">
+                    <span>PM2.5</span><span>PM10</span><span>NO₂</span><span>SO₂</span>
+                </div>
+                <div class="profile-values" id="profile-values">
+                    <span>—</span><span>—</span><span>—</span><span>—</span>
+                </div>
+            </div>
+
+            <!-- Health tips -->
+            <div class="card health" id="health">
+                <h3>Health Tips <span class="dots">···</span></h3>
+
+                <div class="tip">🏃 Avoid outdoor exercise</div>
+                <div class="tip">🪟 Close windows to avoid dirty air</div>
+                <div class="tip">😷 Wear a mask outdoors</div>
+            </div>
+
+                      <!-- City watchlist -->
+            <div class="card watchlist" id="watchlist">
+                <h3>Watchlist <span class="dots">This Week</span></h3>
+
+                <div class="watch-head">
+                    <span>City / State</span>
+                    <span>Monitoring station</span>
+                    <span>Available pollutant readings</span>
+                    <span>Last updated</span>
+                </div>
+                <div id="live-watchlist">
+                    <div class="city-row">
+                        <span>Loading live station data…</span>
+                        <span>—</span><span>—</span><span>—</span>
+                    </div>
+                </div>
+                <div class="watchlist-note">
+                    Source: data.gov.in live observations. Pollutant readings are not overall AQI values.
+                </div>
+
+            </div>
+
+        </div>
+
+        <footer>AirSight | Live pollutant observations from data.gov.in · Overall AQI is not inferred from pollutant concentrations</footer>
+
+    </main>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // AirSight live station map. The backend keeps the data.gov.in API key private.
+    const API_BASE = 'https://airsight-api.onrender.com';
+    let latestLivePayload = null;
+    let selectedCityQuery = null;
+    let selectedStation = null;
+    const map = L.map('real-map').setView([22.9734, 78.6569], 5);
+    const stationLayer = L.layerGroup().addTo(map);
+    const statusElement = document.getElementById('map-status');
+
+    // Esri World Street Map tiles. This public endpoint typically works
+    // without a personal API key for small educational projects. Follow
+    // Esri's terms and usage limits; do not bulk-download or cache tiles.
+    const baseTiles = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+        {
+            attribution: 'Tiles &copy; Esri — Sources: Esri, HERE, Garmin, USGS, and others',
+            maxZoom: 19
+        }
+    ).addTo(map);
+
+    let tileErrorShown = false;
+    baseTiles.on('tileerror', () => {
+        if (!tileErrorShown) {
+            tileErrorShown = true;
+            console.warn('Map tiles could not be loaded. Check network access or the tile provider status.');
+        }
+    });
+
+    function setMapStatus(message, state = '') {
+        statusElement.textContent = message;
+        statusElement.className = 'map-status' + (state ? ' ' + state : '');
+    }
+
+    function addPopupLine(parent, text, className = '') {
+        const line = document.createElement('div');
+        if (className) line.className = className;
+        line.textContent = text;
+        parent.appendChild(line);
+        return line;
+    }
+
+    function createStationPopup(station) {
+        // Build popup using textContent so API text is not interpreted as HTML.
+        const container = document.createElement('div');
+        addPopupLine(container, station.station || 'Monitoring station', 'station-popup-title');
+        addPopupLine(container, [station.city, station.state].filter(Boolean).join(', '));
+        addPopupLine(container, 'Updated: ' + (station.last_update || 'Not provided'), 'station-popup-muted');
+
+        const pollutantNames = Object.keys(station.pollutants || {});
+        if (pollutantNames.length) {
+            addPopupLine(container, 'Available pollutant readings:', 'station-popup-pollutants');
+            pollutantNames.sort().forEach((name) => {
+                addPopupLine(container, name + ': ' + station.pollutants[name]);
+            });
+        } else {
+            addPopupLine(container, 'No pollutant readings available.');
+        }
+
+        addPopupLine(container, 'These are pollutant concentrations, not overall AQI.', 'station-popup-muted');
+        return container;
+    }
+
+    async function loadLiveStations() {
+        setMapStatus('Fetching live stations…');
+        try {
+            const response = await fetch(API_BASE + '/live-stations?limit=500', {
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!response.ok) {
+                throw new Error('Backend returned HTTP ' + response.status);
+            }
+
+            const payload = await response.json();
+            if (typeof renderLiveDashboard === 'function') {
+                renderLiveDashboard(payload);
+            }
+            const stations = Array.isArray(payload.stations) ? payload.stations : [];
+            stationLayer.clearLayers();
+            const bounds = [];
+            let plotted = 0;
+
+            stations.forEach((station) => {
+                const lat = Number(station.latitude);
+                const lon = Number(station.longitude);
+                if (!Number.isFinite(lat) || !Number.isFinite(lon) ||
+                    lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+                    return;
+                }
+
+                const marker = L.marker([lat, lon]);
+                marker.bindPopup(createStationPopup(station));
+                marker.addTo(stationLayer);
+                bounds.push([lat, lon]);
+                plotted += 1;
+            });
+
+            if (bounds.length) {
+                map.fitBounds(bounds, { padding: [24, 24], maxZoom: 7 });
+                setMapStatus('Live stations: ' + plotted + ' · Refreshes every 5 minutes', 'ok');
+            } else {
+                setMapStatus('The API returned no stations with valid coordinates.', 'error');
+            }
+        } catch (error) {
+            console.error('Unable to load live stations:', error);
+            setMapStatus(
+                'Could not load live stations. Ensure FastAPI is running at 127.0.0.1:8000 and CORS is enabled.',
+                'error'
+            );
+        }
+    }
+
+    function numericReading(value) {
+        if (value && typeof value === 'object') {
+            value = value.avg_value ?? value.average ?? value.value ?? value.avg ?? null;
+        }
+        if (value === null || value === undefined || value === '') return null;
+        const n = Number(value);
+        return Number.isFinite(n) && n >= 0 ? n : null;
+    }
+
+    function formatReading(value) {
+        const n = numericReading(value);
+        return n === null ? 'N/A' : n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    }
+
+    function getPollutant(pollutants, wanted) {
+        if (!pollutants || typeof pollutants !== 'object') return null;
+        const aliases = {
+            'PM2.5': ['PM2.5', 'PM25', 'PM 2.5'],
+            'PM10': ['PM10', 'PM 10'],
+            'NO2': ['NO2', 'NO₂'],
+            'SO2': ['SO2', 'SO₂']
+        };
+        const wantedKeys = (aliases[wanted] || [wanted]).map(k => k.toUpperCase().replace(/\\s/g, ''));
+        for (const [key, value] of Object.entries(pollutants)) {
+            if (wantedKeys.includes(key.toUpperCase().replace(/\\s/g, ''))) {
+                const n = numericReading(value);
+                if (n !== null) return n;
+            }
+        }
+        return null;
+    }
+
+    function recognizedPollutantCount(station) {
+        const p = station && station.pollutants ? station.pollutants : {};
+        return ['PM2.5', 'PM10', 'NO2', 'SO2'].filter(name => getPollutant(p, name) !== null).length;
+    }
+
+
+    // Updates the compact US AQI scale using the dashboard's actual forecast.
+    function updateAqiHealthScale(aqi) {
+        const value = Number(aqi);
+        const badge = document.getElementById('aqi-health-badge');
+        const marker = document.getElementById('aqi-scale-marker');
+        const advice = document.getElementById('aqi-health-advice');
+        if (!badge || !marker || !advice) return;
+
+        if (!Number.isFinite(value) || value < 0) {
+            badge.textContent = 'AQI unavailable';
+            badge.style.background = '#303638';
+            advice.textContent = 'A valid forecast is not available yet.';
+            return;
+        }
+
+        const ranges = [
+            { name:'Good', min:0, max:50, color:'#00e400', text:'Air quality is satisfactory; pollution risk is low.' },
+            { name:'Moderate', min:51, max:100, color:'#ffff00', text:'Air quality is generally acceptable. Unusually sensitive people should watch for symptoms.' },
+            { name:'Unhealthy for Sensitive Groups', min:101, max:150, color:'#ff7e00', text:'Sensitive groups should reduce prolonged or heavy outdoor exertion.' },
+            { name:'Unhealthy', min:151, max:200, color:'#ff0000', text:'Everyone may experience health effects. Reduce prolonged or heavy outdoor exertion, especially if sensitive to air pollution.' },
+            { name:'Very Unhealthy', min:201, max:300, color:'#8f3f97', text:'Health risks increase for everyone. Limit outdoor exertion and follow local health guidance.' },
+            { name:'Hazardous', min:301, max:500, color:'#7e0023', text:'Emergency-level air quality is possible. Avoid outdoor exposure and follow public-health instructions.' }
+        ];
+        const category = ranges.find(item => value >= item.min && value <= item.max);
+        badge.textContent = `AQI ${Math.round(value)} · ${category ? category.name : 'Above scale'}`;
+        badge.style.background = category ? category.color : '#7e0023';
+        badge.style.color = category && category.name === 'Moderate' ? '#111' : '#fff';
+        marker.style.left = `${Math.min(value, 500) / 500 * 100}%`;
+        advice.style.borderLeftColor = category ? category.color : '#7e0023';
+        advice.innerHTML = category
+            ? `<strong>${category.name}:</strong> ${category.text}`
+            : '<strong>Above 500:</strong> Follow local public-health instructions.';
+    }
+
+    async function loadLivePrediction(city) {
+        const safeSet = (id, value) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = value;
+        };
+        safeSet('overall-aqi', '…');
+        safeSet('aqi-status', `Running the next-day model for ${city}…`);
+        try {
+            const response = await fetch(
+                API_BASE + '/predict-live?city=' + encodeURIComponent(city) + '&limit=300',
+                { headers: { 'Accept': 'application/json' } }
+            );
+            const payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.detail || ('Backend returned HTTP ' + response.status));
+            }
+            safeSet('overall-aqi', Number(payload.predicted_next_day_aqi).toFixed(0));
+            updateAqiHealthScale(payload.predicted_next_day_aqi);
+            safeSet('aqi-location', payload.city || city);
+            const used = Array.isArray(payload.pollutants_used) ? payload.pollutants_used.length : 0;
+            safeSet(
+                'aqi-status',
+                `Predicted for tomorrow by ${payload.model || 'the trained ML model'}. ` +
+                `Using ${used} live pollutant type(s). Current official AQI is not provided by this feed.`
+            );
+        } catch (error) {
+            safeSet('overall-aqi', 'N/A');
+            updateAqiHealthScale(NaN);
+            safeSet(
+                'aqi-status',
+                'Forecast unavailable: ' + (error && error.message ? error.message : 'live readings could not be mapped') +
+                '. Check that the API is running and the updated model has been trained.'
+            );
+        }
+    }
+
+    function renderPollutantProfile(station, pollutants) {
+        const graph = document.getElementById('pollutant-profile');
+        const labels = document.getElementById('profile-labels');
+        const valuesEl = document.getElementById('profile-values');
+        const stationEl = document.getElementById('profile-station');
+        if (!graph || !labels || !valuesEl) return;
+
+        const items = [
+            { label: 'PM2.5', value: getPollutant(pollutants, 'PM2.5') },
+            { label: 'PM10', value: getPollutant(pollutants, 'PM10') },
+            { label: 'NO₂', value: getPollutant(pollutants, 'NO2') },
+            { label: 'SO₂', value: getPollutant(pollutants, 'SO2') }
+        ];
+        const available = items.filter(item => item.value !== null);
+        if (!available.length) {
+            graph.innerHTML = '<div class="profile-empty">No PM2.5, PM10, NO₂ or SO₂ readings for this station.</div>';
+        } else {
+            const maxValue = Math.max(1, ...available.map(item => item.value));
+            graph.innerHTML = items.map(item => {
+                const height = item.value === null ? 2 : Math.max(6, (item.value / maxValue) * 100);
+                return `<div class="bar" title="${item.label}: ${item.value === null ? 'N/A' : item.value}" style="height:${height}%"></div>`;
+            }).join('');
+        }
+        labels.innerHTML = items.map(item => `<span>${item.label}</span>`).join('');
+        valuesEl.innerHTML = items.map(item => `<span>${item.value === null ? 'N/A' : formatReading(item.value)}</span>`).join('');
+        if (stationEl) stationEl.textContent = station ? `${station.city || 'Unknown'} · ${station.station || 'station'}` : 'No station';
+    }
+
+    function stationPollutantValue(pollutants, wanted) {
+        if (!pollutants || typeof pollutants !== 'object') return null;
+        const aliases = {'PM2.5':['PM2.5','PM25','PM 2.5'],'PM10':['PM10','PM 10'],'NO2':['NO2','NO₂'],'SO2':['SO2','SO₂']};
+        const keys = (aliases[wanted] || [wanted]).map(k => k.toUpperCase().replace(/\s/g, ''));
+        for (const [key, raw] of Object.entries(pollutants)) {
+            if (!keys.includes(key.toUpperCase().replace(/\s/g, ''))) continue;
+            let v = raw;
+            if (v && typeof v === 'object') v = v.avg_value ?? v.average ?? v.value ?? v.avg ?? null;
+            if (v === null || v === undefined || v === '') return null;
+            const n = Number(v);
+            return Number.isFinite(n) && n >= 0 ? n : null;
+        }
+        return null;
+    }
+    function stationReadCount(station) {
+        const p = station && station.pollutants || {};
+        return ['PM2.5','PM10','NO2','SO2'].filter(k => stationPollutantValue(p,k) !== null).length;
+    }
+    function getAvailableLocations() {
+        const stations = latestLivePayload && Array.isArray(latestLivePayload.stations)
+            ? latestLivePayload.stations : [];
+        const locations = new Map();
+
+        stations.forEach(station => {
+            const city = String(station.city || '').trim();
+            const state = String(station.state || '').trim();
+            if (city) {
+                const key = 'city|' + city.toLowerCase() + '|' + state.toLowerCase();
+                const previous = locations.get(key) || { type: 'City', name: city, state, count: 0, station };
+                previous.count += 1;
+                if (stationReadCount(station) > stationReadCount(previous.station)) previous.station = station;
+                locations.set(key, previous);
+            }
+            if (state) {
+                const key = 'state|' + state.toLowerCase();
+                const previous = locations.get(key) || { type: 'State', name: state, state, count: 0, station };
+                previous.count += 1;
+                if (stationReadCount(station) > stationReadCount(previous.station)) previous.station = station;
+                locations.set(key, previous);
+            }
+        });
+        return [...locations.values()].sort((a, b) =>
+            a.type.localeCompare(b.type) || a.name.localeCompare(b.name)
+        );
+    }
+
+    function hideCitySuggestions() {
+        const box = document.getElementById('city-suggestions');
+        if (box) box.hidden = true;
+    }
+
+    function renderCitySuggestions(query) {
+        const box = document.getElementById('city-suggestions');
+        if (!box) return;
+        const q = String(query || '').trim().toLowerCase();
+        if (!q) {
+            box.innerHTML = '';
+            box.hidden = true;
+            return;
+        }
+        const matches = getAvailableLocations().filter(location =>
+            location.name.toLowerCase().includes(q) ||
+            (location.state || '').toLowerCase().includes(q)
+        ).slice(0, 10);
+
+        if (!matches.length) {
+            box.innerHTML = '<div class="city-suggestions-empty">No matching city/state in the currently loaded live dataset.</div>';
+            box.hidden = false;
+            return;
+        }
+        box.innerHTML = matches.map((location, index) => {
+            const safeName = location.name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            const safeState = (location.state || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            return `<button type="button" class="city-suggestion" role="option" data-location-index="${index}">
+                ${safeName}<small>${location.type}${safeState && safeState.toLowerCase() !== safeName.toLowerCase() ? ' · ' + safeState : ''} · ${location.count} station record(s)</small>
+            </button>`;
+        }).join('');
+        box.hidden = false;
+        box.querySelectorAll('.city-suggestion').forEach(button => {
+            button.addEventListener('click', () => {
+                const location = matches[Number(button.dataset.locationIndex)];
+                if (!location) return;
+                const input = document.getElementById('city-search-input');
+                if (input) input.value = location.name;
+                selectedCityQuery = location.name;
+                hideCitySuggestions();
+                const station = location.station || findLiveStation(location.name);
+                if (station) {
+                    chooseLiveStation(station, `Selected ${location.type.toLowerCase()}: ${location.name}. Showing ${station.city}${station.state ? ', ' + station.state : ''} station.`);
+                } else {
+                    searchLiveCityState(location.name);
+                }
+            });
+        });
+    }
+
+    function findLiveStation(query) {
+        const stations = latestLivePayload && Array.isArray(latestLivePayload.stations) ? latestLivePayload.stations : [];
+        const q = (query || '').trim().toLowerCase();
+        const matches = stations.filter(s => !q || [s.city,s.state,s.station,s.country].some(v => String(v || '').toLowerCase().includes(q)));
+        matches.sort((a,b) => stationReadCount(b)-stationReadCount(a));
+        return matches[0] || null;
+    }
+    function chooseLiveStation(station, message) {
+        const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+        if (!station) {
+            set('location-message', message || 'No matching station found. Search another city or state.');
+            set('aqi-location', selectedCityQuery || 'No station found');
+            set('overall-aqi','N/A');
+            set('aqi-status','No matching live station is available for a forecast.');
+            set('env-pm25','N/A'); set('env-pm10','N/A'); set('env-no2','N/A'); set('env-so2','N/A');
+            set('environment-note', message || 'No matching live station.');
+            renderPollutantProfile(null,{});
+            return;
+        }
+        selectedStation=station;
+        const p=station.pollutants || {};
+        set('aqi-location',[station.city,station.state].filter(Boolean).join(', '));
+        set('location-message',message || `Selected: ${station.station || station.city}.`);
+        set('env-pm25',formatReading(stationPollutantValue(p,'PM2.5')));
+        set('env-pm10',formatReading(stationPollutantValue(p,'PM10')));
+        set('env-no2',formatReading(stationPollutantValue(p,'NO2')));
+        set('env-so2',formatReading(stationPollutantValue(p,'SO2')));
+        renderPollutantProfile(station, {'PM2.5':stationPollutantValue(p,'PM2.5'),'PM10':stationPollutantValue(p,'PM10'),'NO2':stationPollutantValue(p,'NO2'),'SO2':stationPollutantValue(p,'SO2')});
+        set('environment-note',`Selected station: ${station.city || 'Unknown'}${station.state ? ', '+station.state : ''} · ${station.station || 'Station'} · Updated: ${station.last_update || 'time unavailable'}. Source-reported concentrations, not AQI.`);
+        if (station.city) loadLivePrediction(station.city);
+        if (map && Number.isFinite(Number(station.latitude)) && Number.isFinite(Number(station.longitude))) map.setView([Number(station.latitude),Number(station.longitude)],8);
+    }
+    function searchLiveCityState(query) {
+        const q=(query || '').trim();
+        if(!q){document.getElementById('location-message').textContent='Enter a city or state name first.';return;}
+        selectedCityQuery=q;
+        const s=findLiveStation(q);
+        if(s) chooseLiveStation(s,`Search result for "${q}": ${s.city}, ${s.state || ''}.`);
+        else chooseLiveStation(null,`No station matching "${q}" was found in the currently loaded feed. Try a city name or spelling.`);
+    }
+    function detectLiveLocation() {
+        const msg=document.getElementById('location-message');
+        if(!navigator.geolocation){msg.textContent='Location detection is not supported. Search for a city/state instead.';return;}
+        msg.textContent='Requesting browser location permission…';
+        navigator.geolocation.getCurrentPosition(pos=>{
+            const lat=pos.coords.latitude, lon=pos.coords.longitude;
+            const stations=(latestLivePayload && latestLivePayload.stations) || [];
+            const found=stations.filter(s=>Number.isFinite(Number(s.latitude)) && Number.isFinite(Number(s.longitude)))
+              .map(s=>({s,d:Math.hypot(Number(s.latitude)-lat,(Number(s.longitude)-lon)*Math.cos(lat*Math.PI/180))}))
+              .sort((a,b)=>a.d-b.d);
+            if(!found.length){msg.textContent='Location detected, but no station coordinates are available. Search for a city/state.';return;}
+            selectedCityQuery=null;
+            chooseLiveStation(found[0].s,`Nearest station in the loaded feed to your location: ${found[0].s.city}, ${found[0].s.state || ''}.`);
+        },err=>{msg.textContent=err.code===1?'Location permission denied. Allow access or search for a city/state.':'Could not detect location. Try again or search for a city/state.';},{timeout:10000,maximumAge:300000,enableHighAccuracy:false});
+    }
+
+    function renderLiveDashboard(payload) {
+        const stations = Array.isArray(payload.stations) ? payload.stations : [];
+        latestLivePayload = payload;
+        const preferred = (selectedCityQuery ? findLiveStation(selectedCityQuery) : null)
+            || (selectedStation ? stations.find(s => s.city === selectedStation.city && s.station === selectedStation.station) : null)
+            || stations.slice().sort((a,b) => stationReadCount(b)-stationReadCount(a))[0] || null;
+        const pollutants = preferred ? (preferred.pollutants || {}) : {};
+
+        const safeSet = (id, value) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = value;
+        };
+        if (preferred) {
+            chooseLiveStation(preferred, selectedCityQuery
+                ? `Showing best matching station for "${selectedCityQuery}".`
+                : 'Showing a live station with available readings. Use location detection or search to choose another.');
+        } else {
+            chooseLiveStation(null, 'No live station is currently available.');
+        }
+
+        const list = document.getElementById('live-watchlist');
+        if (!list) return;
+        list.replaceChildren();
+        const visibleStations = stations.slice(0, 12);
+        if (!visibleStations.length) {
+            const row = document.createElement('div');
+            row.className = 'city-row';
+            row.textContent = 'No live stations were returned.';
+            list.appendChild(row);
+            return;
+        }
+
+        visibleStations.forEach(station => {
+            const row = document.createElement('div');
+            row.className = 'city-row';
+            const location = document.createElement('span');
+            location.textContent = [station.city, station.state].filter(Boolean).join(', ') || 'Unknown location';
+            const name = document.createElement('span');
+            name.textContent = station.station || 'Unknown station';
+            const readings = document.createElement('span');
+            readings.className = 'station-readings';
+            const pairs = Object.entries(station.pollutants || {});
+            readings.textContent = pairs.length
+                ? pairs.map(([key, value]) => `${key}: ${formatReading(value)}`).join(' · ')
+                : 'No readings';
+            const updated = document.createElement('span');
+            updated.className = 'station-updated';
+            updated.textContent = station.last_update || 'Not provided';
+            row.append(location, name, readings, updated);
+            list.appendChild(row);
+        });
+    }
+
+    loadLiveStations();
+    const citySearchInput = document.getElementById('city-search-input');
+    if (citySearchInput) {
+        citySearchInput.addEventListener('input', () => renderCitySuggestions(citySearchInput.value));
+        citySearchInput.addEventListener('focus', () => renderCitySuggestions(citySearchInput.value));
+        citySearchInput.addEventListener('keydown', event => {
+            if (event.key === 'Escape') hideCitySuggestions();
+            if (event.key === 'Enter') {
+                const box = document.getElementById('city-suggestions');
+                const first = box && box.querySelector('.city-suggestion');
+                if (first && !box.hidden) {
+                    event.preventDefault();
+                    first.click();
+                }
+            }
+        });
+    }
+    document.addEventListener('click', event => {
+        if (!event.target.closest('.city-tools')) hideCitySuggestions();
+    });
+
+    const citySearchForm = document.getElementById('city-search-form');
+    if (citySearchForm) citySearchForm.addEventListener('submit', e => {
+        e.preventDefault();
+        hideCitySuggestions();
+        searchLiveCityState(document.getElementById('city-search-input').value);
+    });
+    const detectButton = document.getElementById('detect-location-btn');
+    if (detectButton) detectButton.addEventListener('click', detectLiveLocation);
+
+    window.setInterval(loadLiveStations, 5 * 60 * 1000);
+</script>
+</body>
+</html>
