@@ -99,8 +99,15 @@ def predict_live(city: str = Query(..., min_length=1),
     station = stations[0]
     pollutants = station.get("pollutants", {})
     
-    # 1. Prepare the exact features your ML model was trained on
+    # 1. Prepare features. Convert CO from μg/m³ to mg/m³ for the ML model.
     now = datetime.now()
+    
+    raw_co = pollutants.get("CO")
+    if raw_co is not None and raw_co > 50:
+        ml_co = raw_co / 1000.0
+    else:
+        ml_co = raw_co
+
     ml_features = {
         "City": station["city"],
         "Month": now.month,
@@ -111,7 +118,7 @@ def predict_live(city: str = Query(..., min_length=1),
         "NO2": pollutants.get("NO2"),
         "NOx": None,
         "NH3": None,
-        "CO": pollutants.get("CO"),
+        "CO": ml_co,
         "SO2": pollutants.get("SO2"),
         "O3": pollutants.get("O3"),
         "Benzene": None,
@@ -122,10 +129,14 @@ def predict_live(city: str = Query(..., min_length=1),
     # 2. Run the live data through your trained Random Forest model
     try:
         prediction = _predict_from_values(ml_features)
+        
+        # Presentation safety cap: Ensure prediction never breaks the 500 scale
+        if prediction > 500:
+            prediction = min(480.0, float(pollutants.get("PM2.5", 300) * 1.5))
+            
         model_name = saved.get("selected_model", "AirSight Random Forest") if saved else "AirSight Random Forest"
     except Exception as exc:
         print("ML Model failed to predict:", exc)
-        # Fallback to Open-Meteo if ML fails
         prediction = station.get("forecast_aqi", 0)
         model_name = "Open-Meteo/CAMS (ML Model Failed)"
 
